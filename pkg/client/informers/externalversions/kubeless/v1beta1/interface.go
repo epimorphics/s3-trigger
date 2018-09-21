@@ -19,13 +19,13 @@ limitations under the License.
 package v1beta1
 
 import (
-	internalinterfaces "github.com/kubeless/kafka-trigger/pkg/client/informers/externalversions/internalinterfaces"
+	internalinterfaces "github.com/epimorphics/s3-trigger/pkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// KafkaTriggers returns a KafkaTriggerInformer.
-	KafkaTriggers() KafkaTriggerInformer
+	// S3Triggers returns a S3TriggerInformer.
+	S3Triggers() S3TriggerInformer
 }
 
 type version struct {
@@ -39,7 +39,7 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// KafkaTriggers returns a KafkaTriggerInformer.
-func (v *version) KafkaTriggers() KafkaTriggerInformer {
-	return &kafkaTriggerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// S3Triggers returns a S3TriggerInformer.
+func (v *version) S3Triggers() S3TriggerInformer {
+	return &s3TriggerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

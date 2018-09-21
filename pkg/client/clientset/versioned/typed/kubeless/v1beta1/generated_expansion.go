@@ -15,4 +15,4 @@ limitations under the License.
 */
 package v1beta1
 
-type KafkaTriggerExpansion interface{}
+type S3TriggerExpansion interface{}

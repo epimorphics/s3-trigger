@@ -21,7 +21,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1beta1 "github.com/kubeless/kafka-trigger/pkg/apis/kubeless/v1beta1"
+	v1beta1 "github.com/epimorphics/s3-trigger/pkg/apis/kubeless/v1beta1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -53,8 +53,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=kubeless.io, Version=v1beta1
-	case v1beta1.SchemeGroupVersion.WithResource("kafkatriggers"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeless().V1beta1().KafkaTriggers().Informer()}, nil
+	case v1beta1.SchemeGroupVersion.WithResource("s3triggers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kubeless().V1beta1().S3Triggers().Informer()}, nil
 
 	}
 

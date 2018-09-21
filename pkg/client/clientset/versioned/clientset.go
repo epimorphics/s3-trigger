@@ -16,8 +16,8 @@ limitations under the License.
 package versioned
 
 import (
+	kubelessv1beta1 "github.com/epimorphics/s3-trigger/pkg/client/clientset/versioned/typed/kubeless/v1beta1"
 	glog "github.com/golang/glog"
-	kubelessv1beta1 "github.com/kubeless/kafka-trigger/pkg/client/clientset/versioned/typed/kubeless/v1beta1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

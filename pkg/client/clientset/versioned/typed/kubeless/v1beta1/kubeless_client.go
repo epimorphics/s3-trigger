@@ -16,15 +16,15 @@ limitations under the License.
 package v1beta1
 
 import (
-	v1beta1 "github.com/kubeless/kafka-trigger/pkg/apis/kubeless/v1beta1"
-	"github.com/kubeless/kafka-trigger/pkg/client/clientset/versioned/scheme"
+	v1beta1 "github.com/epimorphics/s3-trigger/pkg/apis/kubeless/v1beta1"
+	"github.com/epimorphics/s3-trigger/pkg/client/clientset/versioned/scheme"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	rest "k8s.io/client-go/rest"
 )
 
 type KubelessV1beta1Interface interface {
 	RESTClient() rest.Interface
-	KafkaTriggersGetter
+	S3TriggersGetter
 }
 
 // KubelessV1beta1Client is used to interact with features provided by the kubeless.io group.
@@ -32,8 +32,8 @@ type KubelessV1beta1Client struct {
 	restClient rest.Interface
 }
 
-func (c *KubelessV1beta1Client) KafkaTriggers(namespace string) KafkaTriggerInterface {
-	return newKafkaTriggers(c, namespace)
+func (c *KubelessV1beta1Client) S3Triggers(namespace string) S3TriggerInterface {
+	return newS3Triggers(c, namespace)
 }
 
 // NewForConfig creates a new KubelessV1beta1Client for the given config.

@@ -18,10 +18,10 @@ limitations under the License.
 
 package v1beta1
 
-// KafkaTriggerListerExpansion allows custom methods to be added to
-// KafkaTriggerLister.
-type KafkaTriggerListerExpansion interface{}
+// S3TriggerListerExpansion allows custom methods to be added to
+// S3TriggerLister.
+type S3TriggerListerExpansion interface{}
 
-// KafkaTriggerNamespaceListerExpansion allows custom methods to be added to
-// KafkaTriggerNamespaceLister.
-type KafkaTriggerNamespaceListerExpansion interface{}
+// S3TriggerNamespaceListerExpansion allows custom methods to be added to
+// S3TriggerNamespaceLister.
+type S3TriggerNamespaceListerExpansion interface{}

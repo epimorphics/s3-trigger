@@ -16,7 +16,7 @@ limitations under the License.
 package fake
 
 import (
-	v1beta1 "github.com/kubeless/kafka-trigger/pkg/client/clientset/versioned/typed/kubeless/v1beta1"
+	v1beta1 "github.com/epimorphics/s3-trigger/pkg/client/clientset/versioned/typed/kubeless/v1beta1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )
@@ -25,8 +25,8 @@ type FakeKubelessV1beta1 struct {
 	*testing.Fake
 }
 
-func (c *FakeKubelessV1beta1) KafkaTriggers(namespace string) v1beta1.KafkaTriggerInterface {
-	return &FakeKafkaTriggers{c, namespace}
+func (c *FakeKubelessV1beta1) S3Triggers(namespace string) v1beta1.S3TriggerInterface {
+	return &FakeS3Triggers{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

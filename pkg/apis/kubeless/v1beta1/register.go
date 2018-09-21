@@ -5,7 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	kubeless "github.com/kubeless/kafka-trigger/pkg/apis/kubeless"
+	kubeless "github.com/epimorphics/s3-trigger/pkg/apis/kubeless"
 )
 
 // SchemeGroupVersion is group version used to register these objects
@@ -32,8 +32,8 @@ var (
 // Adds the list of known types to Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&KafkaTrigger{},
-		&KafkaTriggerList{},
+		&S3Trigger{},
+		&S3TriggerList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
