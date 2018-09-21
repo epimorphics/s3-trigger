@@ -31,5 +31,5 @@ mkdir -p ${GOPATH}/src/k8s.io/kubernetes/hack/boilerplate
 cp ${SCRIPT_ROOT}/hack/boilerplate.go.txt ${GOPATH}/src/k8s.io/kubernetes/hack/boilerplate/
 
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
-  github.com/kubeless/kafka-trigger/pkg/client github.com/kubeless/kafka-trigger/pkg/apis \
+  github.com/epimorphics/s3-trigger/pkg/client github.com/epimorphics/s3-trigger/pkg/apis \
   kubeless:v1beta1 

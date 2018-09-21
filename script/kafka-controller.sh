@@ -39,6 +39,6 @@ rm -rf bundles/kubeless*
 
 # Build kafka-controller
 gox "${OS_PLATFORM_ARG[@]}" "${OS_ARCH_ARG[@]}" \
-    -output="bundles/kubeless_{{.OS}}-{{.Arch}}/kafka-controller" \
+    -output="bundles/kubeless_{{.OS}}-{{.Arch}}/s3-controller" \
     "${BUILD_FLAGS[@]}" \
-    github.com/kubeless/kafka-trigger/cmd/kafka-trigger-controller
+    github.com/epimorphics/s3-trigger/cmd/s3-trigger-controller

@@ -4,7 +4,7 @@ GOFMT = gofmt
 KUBECFG = kubecfg
 DOCKER = docker
 CONTROLLER_IMAGE = kubeless-controller-manager:latest
-KAFKA_CONTROLLER_IMAGE = kafka-trigger-controller:latest
+S3_CONTROLLER_IMAGE = s3-trigger-controller:latest
 OS = linux
 ARCH = amd64
 BUNDLES = bundles
@@ -35,20 +35,18 @@ binary-cross:
 	$(KUBECFG) show -o yaml $< > $@.tmp
 	mv $@.tmp $@
 
-all-yaml: kafka-zookeeper.yaml kafka-zookeeper-openshift.yaml
+all-yaml: s3-trigger.yaml
 
-kafka-zookeeper.yaml: kafka-zookeeper.jsonnet
+s3-trigger.yaml: s3-trigger.jsonnet
 
-kafka-zookeeper-openshift.yaml: kafka-zookeeper-openshift.jsonnet
+docker/s3-controller: s3-controller-build
+	cp $(BUNDLES)/kubeless_$(OS)-$(ARCH)/s3-controller $@
 
-docker/kafka-controller: kafka-controller-build
-	cp $(BUNDLES)/kubeless_$(OS)-$(ARCH)/kafka-controller $@
-
-kafka-controller-build:
+s3-controller-build:
 	./script/kafka-controller.sh -os=$(OS) -arch=$(ARCH)
 
-kafka-controller-image: docker/kafka-controller
-	$(DOCKER) build -t $(KAFKA_CONTROLLER_IMAGE) $<
+s3-controller-image: docker/s3-controller
+	$(DOCKER) build -t $(S3_CONTROLLER_IMAGE) $<
 
 update:
 	./hack/update-codegen.sh
