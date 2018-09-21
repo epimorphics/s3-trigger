@@ -31,11 +31,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	kafkaApi "github.com/kubeless/kafka-trigger/pkg/apis/kubeless/v1beta1"
-	"github.com/kubeless/kafka-trigger/pkg/client/clientset/versioned"
-	kafkaInformers "github.com/kubeless/kafka-trigger/pkg/client/informers/externalversions/kubeless/v1beta1"
-	"github.com/kubeless/kafka-trigger/pkg/event-consumers/kafka"
-	"github.com/kubeless/kafka-trigger/pkg/utils"
+	s3Api "github.com/epimorphics/s3-trigger/pkg/apis/kubeless/v1beta1"
+	"github.com/epimorphics/s3-trigger/pkg/client/clientset/versioned"
+	s3Informers "github.com/epimorphics/s3-trigger/pkg/client/informers/externalversions/kubeless/v1beta1"
+	"github.com/epimorphics/s3-trigger/pkg/event-consumers/s3"
+	"github.com/epimorphics/s3-trigger/pkg/utils"
 	kubelessApi "github.com/kubeless/kubeless/pkg/apis/kubeless/v1beta1"
 	kubelessversioned "github.com/kubeless/kubeless/pkg/client/clientset/versioned"
 	kubelessInformers "github.com/kubeless/kubeless/pkg/client/informers/externalversions/kubeless/v1beta1"
@@ -44,11 +44,11 @@ import (
 
 const (
 	triggerMaxRetries     = 5
-	kafkaTriggerFinalizer = "kubeless.io/kafkatrigger"
+	kafkaTriggerFinalizer = "kubeless.io/s3trigger"
 )
 
 // KafkaTriggerController object
-type KafkaTriggerController struct {
+type S3TriggerController struct {
 	logger           *logrus.Entry
 	kafkaclient      versioned.Interface
 	kubelessclient   kubelessversioned.Interface
@@ -59,14 +59,14 @@ type KafkaTriggerController struct {
 }
 
 // KafkaTriggerConfig contains config for KafkaTriggerController
-type KafkaTriggerConfig struct {
+type S3TriggerConfig struct {
 	KubeCli        kubernetes.Interface
 	TriggerClient  versioned.Interface
 	KubelessClient kubelessversioned.Interface
 }
 
 // NewKafkaTriggerController returns a new *KafkaTriggerController.
-func NewKafkaTriggerController(cfg KafkaTriggerConfig) *KafkaTriggerController {
+func NewS3TriggerController(cfg S3TriggerConfig) *S3TriggerController {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
 	config, err := kubelessutils.GetKubelessConfig(cfg.KubeCli, kubelessutils.GetAPIExtensionsClientInCluster())
@@ -74,7 +74,7 @@ func NewKafkaTriggerController(cfg KafkaTriggerConfig) *KafkaTriggerController {
 		logrus.Fatalf("Unable to read the configmap: %s", err)
 	}
 
-	kafkaInformer := kafkaInformers.NewKafkaTriggerInformer(cfg.TriggerClient, config.Data["functions-namespace"], 0, cache.Indexers{})
+	kafkaInformer := s3Informers.NewS3TriggerInformer(cfg.TriggerClient, config.Data["functions-namespace"], 0, cache.Indexers{})
 
 	functionInformer := kubelessInformers.NewFunctionInformer(cfg.KubelessClient, config.Data["functions-namespace"], 0, cache.Indexers{})
 
@@ -88,8 +88,8 @@ func NewKafkaTriggerController(cfg KafkaTriggerConfig) *KafkaTriggerController {
 		UpdateFunc: func(old, new interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(new)
 			if err == nil {
-				newKafkaTriggerObj := new.(*kafkaApi.KafkaTrigger)
-				oldKafkaTriggerObj := old.(*kafkaApi.KafkaTrigger)
+				newKafkaTriggerObj := new.(*s3Api.S3Trigger)
+				oldKafkaTriggerObj := old.(*s3Api.S3Trigger)
 				if kafkaTriggerObjChanged(oldKafkaTriggerObj, newKafkaTriggerObj) {
 					queue.Add(key)
 				}
@@ -103,7 +103,7 @@ func NewKafkaTriggerController(cfg KafkaTriggerConfig) *KafkaTriggerController {
 		},
 	})
 
-	controller := KafkaTriggerController{
+	controller := S3TriggerController{
 		logger:           logrus.WithField("controller", "kafka-trigger-controller"),
 		kafkaclient:      cfg.TriggerClient,
 		kubelessclient:   cfg.KubelessClient,
@@ -129,7 +129,7 @@ func NewKafkaTriggerController(cfg KafkaTriggerConfig) *KafkaTriggerController {
 }
 
 // Run starts the Kafka trigger controller
-func (c *KafkaTriggerController) Run(stopCh <-chan struct{}) {
+func (c *S3TriggerController) Run(stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 
@@ -146,7 +146,7 @@ func (c *KafkaTriggerController) Run(stopCh <-chan struct{}) {
 	wait.Until(c.runWorker, time.Second, stopCh)
 }
 
-func (c *KafkaTriggerController) waitForCacheSync(stopCh <-chan struct{}) bool {
+func (c *S3TriggerController) waitForCacheSync(stopCh <-chan struct{}) bool {
 	if !cache.WaitForCacheSync(stopCh, c.kafkaInformer.HasSynced, c.functionInformer.HasSynced) {
 		utilruntime.HandleError(fmt.Errorf("Timed out waiting for caches required for Kafka triggers controller to sync;"))
 		return false
@@ -155,13 +155,13 @@ func (c *KafkaTriggerController) waitForCacheSync(stopCh <-chan struct{}) bool {
 	return true
 }
 
-func (c *KafkaTriggerController) runWorker() {
+func (c *S3TriggerController) runWorker() {
 	for c.processNextItem() {
 		// continue looping
 	}
 }
 
-func (c *KafkaTriggerController) processNextItem() bool {
+func (c *S3TriggerController) processNextItem() bool {
 	key, quit := c.queue.Get()
 	if quit {
 		return false
@@ -185,7 +185,7 @@ func (c *KafkaTriggerController) processNextItem() bool {
 	return true
 }
 
-func (c *KafkaTriggerController) syncKafkaTrigger(key string) error {
+func (c *S3TriggerController) syncKafkaTrigger(key string) error {
 	c.logger.Infof("Processing update to Kafka Trigger: %s", key)
 	ns, triggerObjName, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
@@ -203,13 +203,19 @@ func (c *KafkaTriggerController) syncKafkaTrigger(key string) error {
 		return nil
 	}
 
-	triggerObj := obj.(*kafkaApi.KafkaTrigger)
-	topic := triggerObj.Spec.Topic
-	if topic == "" {
-		return errors.New("Kafka Trigger Topic can't be empty. Please check the trigger object %s" + key)
+	triggerObj := obj.(*s3Api.S3Trigger)
+	bucket := triggerObj.Spec.Bucket
+	if bucket == "" {
+		return errors.New("S3 Trigger Bucket can't be empty. Please check the trigger object %s" + key)
+	}
+	subdir := triggerObj.Spec.SubDir
+	pollFrequency := int(triggerObj.Spec.PollFrequency)
+	if pollFrequency == 0 {
+		pollFrequency = 60
+		logrus.Infof("PollFrequency not set, defaulted to 60 seconds")
 	}
 
-	// Kafka trigger API object is marked for deletion (DeletionTimestamp != nil), so lets process the delete update
+	//  trigger API object is marked for deletion (DeletionTimestamp != nil), so lets process the delete update
 	if triggerObj.ObjectMeta.DeletionTimestamp != nil {
 
 		// If finalizer is removed, then we already processed the delete update, so just return
@@ -236,7 +242,7 @@ func (c *KafkaTriggerController) syncKafkaTrigger(key string) error {
 
 		for _, function := range functions.Items {
 			funcName := function.ObjectMeta.Name
-			err = kafka.DeleteKafkaConsumer(triggerObjName, funcName, ns, topic)
+			err = s3.DeleteS3Consumer(triggerObjName, funcName, ns, bucket, subdir)
 			if err != nil {
 				c.logger.Errorf("Failed to delete the Kafka consumer for the function %s associated with the Kafka trigger %s due to %v: ", funcName, key, err)
 			}
@@ -279,7 +285,7 @@ func (c *KafkaTriggerController) syncKafkaTrigger(key string) error {
 
 	for _, function := range functions.Items {
 		funcName := function.ObjectMeta.Name
-		err = kafka.CreateKafkaConsumer(triggerObjName, funcName, ns, topic, c.kubernetesClient)
+		err = s3.CreateS3Consumer(triggerObjName, funcName, ns, bucket, subdir, pollFrequency, c.kubernetesClient)
 		if err != nil {
 			c.logger.Errorf("Failed to create the Kafka consumer for the function %s associated with the Kafka trigger %s due to %v: ", funcName, key, err)
 		}
@@ -290,7 +296,7 @@ func (c *KafkaTriggerController) syncKafkaTrigger(key string) error {
 }
 
 // FunctionAddedDeletedUpdated process the updates to Function objects
-func (c *KafkaTriggerController) FunctionAddedDeletedUpdated(obj interface{}, deleted bool) {
+func (c *S3TriggerController) FunctionAddedDeletedUpdated(obj interface{}, deleted bool) {
 	functionObj, ok := obj.(*kubelessApi.Function)
 	if !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
@@ -306,13 +312,13 @@ func (c *KafkaTriggerController) FunctionAddedDeletedUpdated(obj interface{}, de
 	}
 
 	c.logger.Infof("Processing update to function object %s Namespace: %s", functionObj.Name, functionObj.Namespace)
-	kafkaTriggers, err := c.kafkaclient.KubelessV1beta1().KafkaTriggers(functionObj.Namespace).List(apimachineryHelpers.ListOptions{})
+	s3Triggers, err := c.kafkaclient.KubelessV1beta1().S3Triggers(functionObj.Namespace).List(apimachineryHelpers.ListOptions{})
 	if err != nil {
 		c.logger.Errorf("Failed to get list of Kafka trigger in namespace %s due to %s: ", functionObj.ObjectMeta.Namespace, err)
 		return
 	}
 
-	for _, triggerObj := range kafkaTriggers.Items {
+	for _, triggerObj := range s3Triggers.Items {
 		funcSelector, err := apimachineryHelpers.LabelSelectorAsSelector(&triggerObj.Spec.FunctionSelector)
 		if err != nil {
 			c.logger.Errorf("Failed to convert LabelSelector to Selector due to %s: ", err)
@@ -322,18 +328,18 @@ func (c *KafkaTriggerController) FunctionAddedDeletedUpdated(obj interface{}, de
 		}
 		if deleted {
 			c.logger.Infof("We got a Kafka trigger  %s that is associated with deleted function %s so cleanup Kafka consumer", triggerObj.Name, functionObj.Name)
-			kafka.DeleteKafkaConsumer(triggerObj.ObjectMeta.Name, functionObj.ObjectMeta.Name, functionObj.ObjectMeta.Namespace, triggerObj.Spec.Topic)
+			s3.DeleteS3Consumer(triggerObj.ObjectMeta.Name, functionObj.ObjectMeta.Name, functionObj.ObjectMeta.Namespace, triggerObj.Spec.Bucket, triggerObj.Spec.SubDir)
 			c.logger.Infof("Successfully removed Kafka consumer for Function: %s", functionObj.Name)
 		} else {
 			c.logger.Infof("We got a Kafka trigger  %s that function %s need to be associated so create Kafka consumer", triggerObj.Name, functionObj.Name)
-			kafka.CreateKafkaConsumer(triggerObj.Name, functionObj.Name, functionObj.Namespace, triggerObj.Spec.Topic, c.kubernetesClient)
+			s3.CreateS3Consumer(triggerObj.Name, functionObj.Name, functionObj.Namespace, triggerObj.Spec.Bucket, triggerObj.Spec.SubDir, int(triggerObj.Spec.PollFrequency), c.kubernetesClient)
 			c.logger.Infof("Successfully created Kafka consumer for Function: %s", functionObj.Name)
 		}
 	}
 	c.logger.Infof("Successfully processed update to function object %s Namespace: %s", functionObj.Name, functionObj.Namespace)
 }
 
-func (c *KafkaTriggerController) kafkaTriggerObjNeedFinalizer(triggercObj *kafkaApi.KafkaTrigger) bool {
+func (c *S3TriggerController) kafkaTriggerObjNeedFinalizer(triggercObj *s3Api.S3Trigger) bool {
 	currentFinalizers := triggercObj.ObjectMeta.Finalizers
 	for _, f := range currentFinalizers {
 		if f == kafkaTriggerFinalizer {
@@ -343,7 +349,7 @@ func (c *KafkaTriggerController) kafkaTriggerObjNeedFinalizer(triggercObj *kafka
 	return triggercObj.ObjectMeta.DeletionTimestamp == nil
 }
 
-func (c *KafkaTriggerController) kafkaTriggerHasFinalizer(triggercObj *kafkaApi.KafkaTrigger) bool {
+func (c *S3TriggerController) kafkaTriggerHasFinalizer(triggercObj *s3Api.S3Trigger) bool {
 	currentFinalizers := triggercObj.ObjectMeta.Finalizers
 	for _, f := range currentFinalizers {
 		if f == kafkaTriggerFinalizer {
@@ -353,13 +359,13 @@ func (c *KafkaTriggerController) kafkaTriggerHasFinalizer(triggercObj *kafkaApi.
 	return false
 }
 
-func (c *KafkaTriggerController) kafkaTriggerObjAddFinalizer(triggercObj *kafkaApi.KafkaTrigger) error {
+func (c *S3TriggerController) kafkaTriggerObjAddFinalizer(triggercObj *s3Api.S3Trigger) error {
 	triggercObjClone := triggercObj.DeepCopy()
 	triggercObjClone.ObjectMeta.Finalizers = append(triggercObjClone.ObjectMeta.Finalizers, kafkaTriggerFinalizer)
 	return utils.UpdateKafkaTriggerCustomResource(c.kafkaclient, triggercObjClone)
 }
 
-func (c *KafkaTriggerController) kafkaTriggerObjRemoveFinalizer(triggercObj *kafkaApi.KafkaTrigger) error {
+func (c *S3TriggerController) kafkaTriggerObjRemoveFinalizer(triggercObj *s3Api.S3Trigger) error {
 	triggercObjClone := triggercObj.DeepCopy()
 	newSlice := make([]string, 0)
 	for _, item := range triggercObjClone.ObjectMeta.Finalizers {
@@ -379,7 +385,7 @@ func (c *KafkaTriggerController) kafkaTriggerObjRemoveFinalizer(triggercObj *kaf
 	return nil
 }
 
-func kafkaTriggerObjChanged(oldKafkaTriggerObj, newKafkaTriggerObj *kafkaApi.KafkaTrigger) bool {
+func kafkaTriggerObjChanged(oldKafkaTriggerObj, newKafkaTriggerObj *s3Api.S3Trigger) bool {
 	// If the kafka trigger object's deletion timestamp is set, then process
 	if oldKafkaTriggerObj.DeletionTimestamp != newKafkaTriggerObj.DeletionTimestamp {
 		return true
@@ -391,7 +397,10 @@ func kafkaTriggerObjChanged(oldKafkaTriggerObj, newKafkaTriggerObj *kafkaApi.Kaf
 	if !reflect.DeepEqual(oldKafkaTriggerObj.Spec.FunctionSelector, newKafkaTriggerObj.Spec.FunctionSelector) {
 		return true
 	}
-	if oldKafkaTriggerObj.Spec.Topic != newKafkaTriggerObj.Spec.Topic {
+	if oldKafkaTriggerObj.Spec.Bucket != newKafkaTriggerObj.Spec.Bucket {
+		return true
+	}
+	if oldKafkaTriggerObj.Spec.SubDir != newKafkaTriggerObj.Spec.SubDir {
 		return true
 	}
 	return false

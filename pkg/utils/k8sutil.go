@@ -24,7 +24,7 @@ import (
 	"os"
 	"path/filepath"
 
-	kafkaApi "github.com/kubeless/kafka-trigger/pkg/apis/kubeless/v1beta1"
+	s3Api "github.com/epimorphics/s3-trigger/pkg/apis/kubeless/v1beta1"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/api/autoscaling/v2beta1"
@@ -44,8 +44,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 
+	"github.com/epimorphics/s3-trigger/pkg/client/clientset/versioned"
 	"github.com/imdario/mergo"
-	"github.com/kubeless/kafka-trigger/pkg/client/clientset/versioned"
 )
 
 const (
@@ -154,8 +154,8 @@ func GetKubelessClientOutCluster() (versioned.Interface, error) {
 }
 
 // CreateKafkaTriggerCustomResource will create a custom function object
-func CreateKafkaTriggerCustomResource(kubelessClient versioned.Interface, kafkaTrigger *kafkaApi.KafkaTrigger) error {
-	_, err := kubelessClient.KubelessV1beta1().KafkaTriggers(kafkaTrigger.Namespace).Create(kafkaTrigger)
+func CreateKafkaTriggerCustomResource(kubelessClient versioned.Interface, kafkaTrigger *s3Api.S3Trigger) error {
+	_, err := kubelessClient.KubelessV1beta1().S3Triggers(kafkaTrigger.Namespace).Create(kafkaTrigger)
 	if err != nil {
 		return err
 	}
@@ -163,14 +163,14 @@ func CreateKafkaTriggerCustomResource(kubelessClient versioned.Interface, kafkaT
 }
 
 // UpdateKafkaTriggerCustomResource applies changes to the function custom object
-func UpdateKafkaTriggerCustomResource(kubelessClient versioned.Interface, kafkaTrigger *kafkaApi.KafkaTrigger) error {
-	_, err := kubelessClient.KubelessV1beta1().KafkaTriggers(kafkaTrigger.Namespace).Update(kafkaTrigger)
+func UpdateKafkaTriggerCustomResource(kubelessClient versioned.Interface, kafkaTrigger *s3Api.S3Trigger) error {
+	_, err := kubelessClient.KubelessV1beta1().S3Triggers(kafkaTrigger.Namespace).Update(kafkaTrigger)
 	return err
 }
 
 // DeleteKafkaTriggerCustomResource will delete custom function object
 func DeleteKafkaTriggerCustomResource(kubelessClient versioned.Interface, kafkaTriggerName, ns string) error {
-	err := kubelessClient.KubelessV1beta1().KafkaTriggers(ns).Delete(kafkaTriggerName, &metav1.DeleteOptions{})
+	err := kubelessClient.KubelessV1beta1().S3Triggers(ns).Delete(kafkaTriggerName, &metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
@@ -179,8 +179,8 @@ func DeleteKafkaTriggerCustomResource(kubelessClient versioned.Interface, kafkaT
 }
 
 // GetKafkaTriggerCustomResource will get CronJobTrigger custom resource object
-func GetKafkaTriggerCustomResource(kubelessClient versioned.Interface, kafkaTriggerName, ns string) (*kafkaApi.KafkaTrigger, error) {
-	kafkaCRD, err := kubelessClient.KubelessV1beta1().KafkaTriggers(ns).Get(kafkaTriggerName, metav1.GetOptions{})
+func GetKafkaTriggerCustomResource(kubelessClient versioned.Interface, kafkaTriggerName, ns string) (*s3Api.S3Trigger, error) {
+	kafkaCRD, err := kubelessClient.KubelessV1beta1().S3Triggers(ns).Get(kafkaTriggerName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
