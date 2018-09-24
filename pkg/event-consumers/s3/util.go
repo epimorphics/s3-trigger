@@ -13,9 +13,15 @@ type ObjectMetadata struct {
 	Modified time.Time `json:"modified"`
 }
 
-func Watcher(bucket string, key string, pollDuration int, data chan ObjectMetadata, closechan chan struct{}) {
+func Watcher(bucket string, key string, pollDuration int, etcdPolled func() *time.Time, polled chan time.Time, data chan ObjectMetadata, closechan chan struct{}) {
 	input := &s3.ListObjectsInput{Bucket: aws.String(bucket), Prefix: aws.String(key)}
-	lastPolled := time.Now()
+	etcdStart := etcdPolled()
+	var lastPolled time.Time
+	if etcdStart != nil {
+		lastPolled = *etcdStart
+	} else {
+		lastPolled = time.Now()
+	}
 	for {
 		select {
 		case <-closechan:
@@ -26,6 +32,7 @@ func Watcher(bucket string, key string, pollDuration int, data chan ObjectMetada
 			for _, object := range metadata {
 				data <- object
 			}
+			polled <- lastPolled
 			time.Sleep(time.Duration(pollDuration) * time.Second)
 		}
 	}
@@ -38,9 +45,10 @@ func since(input *s3.ListObjectsInput, sinceTime time.Time) []ObjectMetadata {
 	}
 
 	objects := make([]ObjectMetadata, 0)
+	logrus.Infof("Polled s3 bucket %v, %v", input.Bucket, input.Prefix)
 	for _, item := range resp.Contents {
-		logrus.Infof("Polled s3 bucket %s, %s", item.LastModified, sinceTime)
 		if item.LastModified.After(sinceTime) {
+			logrus.Infof("Item Discovered")
 			object := ObjectMetadata{
 				Bucket:   *input.Bucket,
 				Key:      *item.Key,

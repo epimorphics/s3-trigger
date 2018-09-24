@@ -121,6 +121,8 @@ golang.org/x/text v0.0.0-20170810154203-b19bf474d317 h1:WKW+OPdYPlvOTVGHuMfjnIC6
 golang.org/x/text v0.0.0-20170810154203-b19bf474d317/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
+golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e h1:FDhOuMEY4JVRztM/gsbk+IKUQ8kj74bxZrgw87eMMVc=
+golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
 google.golang.org/appengine v1.1.0/go.mod h1:EbEs0AVv82hx2wNQdGPgUI5lhzA/G0D9YwlJXL52JkM=
 gopkg.in/airbrake/gobrake.v2 v2.0.9 h1:7z2uVWwn7oVeeugY1DtlPAy5H+KYgB1KeKTnqjNatLo=
 gopkg.in/airbrake/gobrake.v2 v2.0.9/go.mod h1:/h5ZAUhDkGaJfjzjKLSjv6zCL6O0LLBxU4K+aSYdM/U=
@@ -145,7 +147,9 @@ k8s.io/apimachinery v0.0.0-20180103174757-bc110fd540ab h1:A9ZhU8b4ibVf9qeB9z1cSR
 k8s.io/apimachinery v0.0.0-20180103174757-bc110fd540ab/go.mod h1:ccL7Eh7zubPUSh9A3USN90/OzHNSVN6zxzde07TDCL0=
 k8s.io/client-go v5.0.0+incompatible h1:T+5DkD8BQJRNCstIkZU7l/k24uwrG+8DMoPBbJ4k5ow=
 k8s.io/client-go v5.0.0+incompatible/go.mod h1:7vJpHMYJwNQCWgzmNV+VYUl1zCObLyodBc8nIyt8L5s=
+k8s.io/code-generator v0.0.0-20180103022856-91d3f6a57905 h1:B+yDT/IWWMQpyLXEZE8kSJFMhYRwQVWJPFWVZpxrRd0=
 k8s.io/code-generator v0.0.0-20180103022856-91d3f6a57905/go.mod h1:MYiN+ZJZ9HkETbgVZdWw2AsuAi9PZ4V80cwfuf2axe8=
+k8s.io/gengo v0.0.0-20180122193928-93fa71758640 h1:XfMWRe1YYNTldMQjiBOxtuixBEzHJw0qegLrE2Oa50k=
 k8s.io/gengo v0.0.0-20180122193928-93fa71758640/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
 k8s.io/kube-openapi v0.0.0-20170830100654-868f2f29720b h1:SyuirKLV40nduven5kTB5bLsE/dbzCCxeQbFpf12Fi8=
 k8s.io/kube-openapi v0.0.0-20170830100654-868f2f29720b/go.mod h1:BXM9ceUBTj2QnfH2MK1odQs778ajze1RxcmP6S8RVVc=

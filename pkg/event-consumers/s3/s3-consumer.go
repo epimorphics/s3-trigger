@@ -5,8 +5,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	v1beta1 "github.com/epimorphics/s3-trigger/pkg/apis/kubeless/v1beta1"
+	"github.com/epimorphics/s3-trigger/pkg/client/clientset/versioned"
 	"github.com/epimorphics/s3-trigger/pkg/utils"
 	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"time"
 )
@@ -16,7 +19,8 @@ var (
 	stoppedM  map[string](chan struct{})
 	consumerM map[string]bool
 
-	svc *s3.S3
+	svc          *s3.S3
+	PolledFormat string
 )
 
 type WatcherDataInstance struct {
@@ -44,17 +48,55 @@ func init() {
 	}
 	// Create S3 service client
 	svc = s3.New(sess)
+	PolledFormat = "2006-01-02T15:04:05.000Z"
 }
 
-func S3ConsumerProcess(bucket, prefix, funcName, ns string, pollFrequency int, clientset kubernetes.Interface, stopchan, stoppedchan chan struct{}) {
+func UpdateS3TriggerTime(s3interface versioned.Interface, ns, triggerObjName string, timestamp time.Time) {
+	triggerObj, err := s3interface.KubelessV1beta1().S3Triggers(ns).Get(triggerObjName, metav1.GetOptions{})
+	if err != nil {
+		logrus.Fatalf("Could not get trigger %s from kubernetes API, status not updated: %s", triggerObjName, err)
+		return
+	}
+	logrus.Infof("Updating trigger %s status", triggerObjName)
+	triggerClone := triggerObj.DeepCopy()
+	triggerClone.Status = v1beta1.S3TriggerStatus{LastPolled: timestamp.UTC().Format(PolledFormat)}
+	err = utils.UpdateKafkaTriggerCustomResource(s3interface, triggerClone)
+	if err != nil {
+		logrus.Fatalf("could not update trigger %s: %s", triggerObjName, err)
+		return
+	}
+	logrus.Infof("Updated trigger %s status", triggerObjName)
+}
+
+func GetS3TriggerTime(s3interface versioned.Interface, ns, triggerObjName string) *time.Time {
+	triggerObj, err := s3interface.KubelessV1beta1().S3Triggers(ns).Get(triggerObjName, metav1.GetOptions{})
+	if err != nil {
+		logrus.Fatalf("Could not get trigger %s metadata from kubernetes API: %s", triggerObjName, err)
+		return nil
+	}
+	time, err := time.Parse(PolledFormat, triggerObj.Status.LastPolled)
+	if err != nil {
+		logrus.Errorf("Could not parse last poll time for trigger %s from kubernetes API: %s", triggerObjName, err)
+		return nil
+	}
+	return &time
+}
+
+func S3ConsumerProcess(bucket, prefix, triggerObjName, funcName, ns string, pollFrequency int, clientset kubernetes.Interface, s3interface versioned.Interface, stopchan, stoppedchan chan struct{}) {
 	defer close(stoppedchan)
 	consumer := make(chan ObjectMetadata)
+	pollUpdate := make(chan time.Time)
 	closeWatcher := make(chan struct{})
-	go Watcher(bucket, prefix, pollFrequency, consumer, closeWatcher)
+	go Watcher(bucket, prefix, pollFrequency, func() *time.Time { return GetS3TriggerTime(s3interface, ns, triggerObjName) }, pollUpdate, consumer, closeWatcher)
 	defer close(closeWatcher)
 	defer close(consumer)
+	defer close(pollUpdate)
 	for {
 		select {
+		case msg := <-pollUpdate:
+			go func() {
+				UpdateS3TriggerTime(s3interface, ns, triggerObjName, msg)
+			}()
 		case msg := <-consumer:
 			go func() {
 				jsonString, err := json.Marshal(msg)
@@ -80,13 +122,13 @@ func S3ConsumerProcess(bucket, prefix, funcName, ns string, pollFrequency int, c
 	}
 }
 
-func CreateS3Consumer(triggerObjName, funcName, ns, bucket, key string, pollFrequency int, clientset kubernetes.Interface) error {
+func CreateS3Consumer(triggerObjName, funcName, ns, bucket, key string, pollFrequency int, clientset kubernetes.Interface, s3interface versioned.Interface) error {
 	consumerID := generateUniqueConsumerGroupID(triggerObjName, funcName, ns, bucket, key)
 	if !consumerM[consumerID] {
 		logrus.Infof("Creating S3 consumer for the function %s associated with trigger %s", funcName, triggerObjName)
 		stopM[consumerID] = make(chan struct{})
 		stoppedM[consumerID] = make(chan struct{})
-		go S3ConsumerProcess(bucket, key, funcName, ns, pollFrequency, clientset, stopM[consumerID], stoppedM[consumerID])
+		go S3ConsumerProcess(bucket, key, triggerObjName, funcName, ns, pollFrequency, clientset, s3interface, stopM[consumerID], stoppedM[consumerID])
 		consumerM[consumerID] = true
 		logrus.Infof("Created S3 consumer for the function %s associated with trigger %s", funcName, triggerObjName)
 	} else {

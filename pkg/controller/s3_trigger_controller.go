@@ -285,7 +285,7 @@ func (c *S3TriggerController) syncKafkaTrigger(key string) error {
 
 	for _, function := range functions.Items {
 		funcName := function.ObjectMeta.Name
-		err = s3.CreateS3Consumer(triggerObjName, funcName, ns, bucket, subdir, pollFrequency, c.kubernetesClient)
+		err = s3.CreateS3Consumer(triggerObjName, funcName, ns, bucket, subdir, pollFrequency, c.kubernetesClient, c.kafkaclient)
 		if err != nil {
 			c.logger.Errorf("Failed to create the Kafka consumer for the function %s associated with the Kafka trigger %s due to %v: ", funcName, key, err)
 		}
@@ -314,7 +314,7 @@ func (c *S3TriggerController) FunctionAddedDeletedUpdated(obj interface{}, delet
 	c.logger.Infof("Processing update to function object %s Namespace: %s", functionObj.Name, functionObj.Namespace)
 	s3Triggers, err := c.kafkaclient.KubelessV1beta1().S3Triggers(functionObj.Namespace).List(apimachineryHelpers.ListOptions{})
 	if err != nil {
-		c.logger.Errorf("Failed to get list of Kafka trigger in namespace %s due to %s: ", functionObj.ObjectMeta.Namespace, err)
+		c.logger.Errorf("Failed to get list of S3 trigger in namespace %s due to %s: ", functionObj.ObjectMeta.Namespace, err)
 		return
 	}
 
@@ -327,13 +327,13 @@ func (c *S3TriggerController) FunctionAddedDeletedUpdated(obj interface{}, delet
 			continue
 		}
 		if deleted {
-			c.logger.Infof("We got a Kafka trigger  %s that is associated with deleted function %s so cleanup Kafka consumer", triggerObj.Name, functionObj.Name)
+			c.logger.Infof("We got a S3 trigger  %s that is associated with deleted function %s so cleanup S3 consumer", triggerObj.Name, functionObj.Name)
 			s3.DeleteS3Consumer(triggerObj.ObjectMeta.Name, functionObj.ObjectMeta.Name, functionObj.ObjectMeta.Namespace, triggerObj.Spec.Bucket, triggerObj.Spec.SubDir)
 			c.logger.Infof("Successfully removed Kafka consumer for Function: %s", functionObj.Name)
 		} else {
-			c.logger.Infof("We got a Kafka trigger  %s that function %s need to be associated so create Kafka consumer", triggerObj.Name, functionObj.Name)
-			s3.CreateS3Consumer(triggerObj.Name, functionObj.Name, functionObj.Namespace, triggerObj.Spec.Bucket, triggerObj.Spec.SubDir, int(triggerObj.Spec.PollFrequency), c.kubernetesClient)
-			c.logger.Infof("Successfully created Kafka consumer for Function: %s", functionObj.Name)
+			c.logger.Infof("We got a S3 trigger  %s that function %s need to be associated so create S3 consumer", triggerObj.Name, functionObj.Name)
+			s3.CreateS3Consumer(triggerObj.Name, functionObj.Name, functionObj.Namespace, triggerObj.Spec.Bucket, triggerObj.Spec.SubDir, int(triggerObj.Spec.PollFrequency), c.kubernetesClient, c.kafkaclient)
+			c.logger.Infof("Successfully created S3 consumer for Function: %s", functionObj.Name)
 		}
 	}
 	c.logger.Infof("Successfully processed update to function object %s Namespace: %s", functionObj.Name, functionObj.Namespace)
@@ -385,22 +385,25 @@ func (c *S3TriggerController) kafkaTriggerObjRemoveFinalizer(triggercObj *s3Api.
 	return nil
 }
 
-func kafkaTriggerObjChanged(oldKafkaTriggerObj, newKafkaTriggerObj *s3Api.S3Trigger) bool {
+func kafkaTriggerObjChanged(oldS3TriggerObj, newS3TriggerObj *s3Api.S3Trigger) bool {
 	// If the kafka trigger object's deletion timestamp is set, then process
-	if oldKafkaTriggerObj.DeletionTimestamp != newKafkaTriggerObj.DeletionTimestamp {
+	if oldS3TriggerObj.DeletionTimestamp != newS3TriggerObj.DeletionTimestamp {
 		return true
 	}
-	// If the new and old kafka trigger object's resource version is same
-	if oldKafkaTriggerObj.ResourceVersion == newKafkaTriggerObj.ResourceVersion {
+	// If the new and old s3 trigger object's resource version is same
+	if oldS3TriggerObj.ResourceVersion == newS3TriggerObj.ResourceVersion {
 		return false
 	}
-	if !reflect.DeepEqual(oldKafkaTriggerObj.Spec.FunctionSelector, newKafkaTriggerObj.Spec.FunctionSelector) {
+	if !reflect.DeepEqual(oldS3TriggerObj.Spec.FunctionSelector, newS3TriggerObj.Spec.FunctionSelector) {
 		return true
 	}
-	if oldKafkaTriggerObj.Spec.Bucket != newKafkaTriggerObj.Spec.Bucket {
+	if oldS3TriggerObj.Spec.Bucket != newS3TriggerObj.Spec.Bucket {
 		return true
 	}
-	if oldKafkaTriggerObj.Spec.SubDir != newKafkaTriggerObj.Spec.SubDir {
+	if oldS3TriggerObj.Spec.SubDir != newS3TriggerObj.Spec.SubDir {
+		return true
+	}
+	if oldS3TriggerObj.Spec.PollFrequency != newS3TriggerObj.Spec.PollFrequency {
 		return true
 	}
 	return false

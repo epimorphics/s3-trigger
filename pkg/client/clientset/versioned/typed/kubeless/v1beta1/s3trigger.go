@@ -34,6 +34,7 @@ type S3TriggersGetter interface {
 type S3TriggerInterface interface {
 	Create(*v1beta1.S3Trigger) (*v1beta1.S3Trigger, error)
 	Update(*v1beta1.S3Trigger) (*v1beta1.S3Trigger, error)
+	UpdateStatus(*v1beta1.S3Trigger) (*v1beta1.S3Trigger, error)
 	Delete(name string, options *v1.DeleteOptions) error
 	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
 	Get(name string, options v1.GetOptions) (*v1beta1.S3Trigger, error)
@@ -111,6 +112,22 @@ func (c *s3Triggers) Update(s3Trigger *v1beta1.S3Trigger) (result *v1beta1.S3Tri
 		Namespace(c.ns).
 		Resource("s3triggers").
 		Name(s3Trigger.Name).
+		Body(s3Trigger).
+		Do().
+		Into(result)
+	return
+}
+
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+
+func (c *s3Triggers) UpdateStatus(s3Trigger *v1beta1.S3Trigger) (result *v1beta1.S3Trigger, err error) {
+	result = &v1beta1.S3Trigger{}
+	err = c.client.Put().
+		Namespace(c.ns).
+		Resource("s3triggers").
+		Name(s3Trigger.Name).
+		SubResource("status").
 		Body(s3Trigger).
 		Do().
 		Into(result)

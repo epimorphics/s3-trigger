@@ -54,6 +54,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20170412232759-a6bd8cefa181
 	golang.org/x/sys v0.0.0-20180909124046-d0be0721c37e
 	golang.org/x/text v0.3.0
+	golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e // indirect
 	google.golang.org/appengine v1.1.0
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect

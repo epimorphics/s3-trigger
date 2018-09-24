@@ -11,7 +11,8 @@ import (
 type S3Trigger struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
-	Spec              S3TriggerSpec `json:"spec"`
+	Spec              S3TriggerSpec   `json:"spec"`
+	Status            S3TriggerStatus `json:"status"`
 }
 
 // KafkaTriggerSpec defines specification for KafkaTrigger
@@ -20,6 +21,10 @@ type S3TriggerSpec struct {
 	SubDir           string               `json:"subDir"`        // Trigger subdirectory
 	PollFrequency    int64                `json:"pollFrequency"` // S3 Polling Frequency (seconds)
 	FunctionSelector metav1.LabelSelector `json:"functionSelector"`
+}
+
+type S3TriggerStatus struct {
+	LastPolled string `json:"lastPolled"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

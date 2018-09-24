@@ -97,6 +97,18 @@ func (c *FakeS3Triggers) Update(s3Trigger *v1beta1.S3Trigger) (result *v1beta1.S
 	return obj.(*v1beta1.S3Trigger), err
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakeS3Triggers) UpdateStatus(s3Trigger *v1beta1.S3Trigger) (*v1beta1.S3Trigger, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(s3triggersResource, "status", c.ns, s3Trigger), &v1beta1.S3Trigger{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.S3Trigger), err
+}
+
 // Delete takes name of the s3Trigger and deletes it. Returns an error if one occurs.
 func (c *FakeS3Triggers) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
